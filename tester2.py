@@ -3,7 +3,22 @@ import json
 from subprocess import call
 import os
 import time
+import datetime
 
+class TrafficVault:
+	def login(self):
+		pswd = str(os.environ['OPS_PASS'])
+		usr  = str(os.environ['RIAK'])
+		res = call([
+    			'curl',
+			'-k',
+			'-s',
+    			'--user',
+    			usr + ':' + pswd,
+    			'https://traffic-vault/ping'	
+		])
+		print(res)
+		return res == "OK"
 class TrafficOps:
 	session = requests.Session()
 	session.verify = False
@@ -59,6 +74,7 @@ class TrafficMonitor:
 
 	def are_all_caches_avail(self):
 		data = requests.get(url = self.url_states).json()
+		print(datetime.datetime.now().time())
 		print(data["caches"])
 		#[ expression for item in list if conditional ]
 		return len(data["caches"].items()) == sum([ 0 if value["isAvailable"] == "True" else 1 for key , value in data["caches"].items()])
@@ -86,6 +102,9 @@ tm = TrafficMonitor("TrafficMonitor")
 #	print("k8s-node-02 available")
 #else:	
 #	print("k8s-node-03 is not available")
+
+tv = TrafficVault()
+tv.login()
 
 to = TrafficOps()
 if (to.login()):
