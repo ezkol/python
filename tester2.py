@@ -4,10 +4,36 @@ from subprocess import call
 import os
 import time
 import datetime
+import filecmp
 
 # git clone https://github.com/globocom/m3u8.git
 # python3.6 setup.py install
 import m3u8
+# Determine the items that exist in both directories
+
+class DirCmp:
+	def cmp(self):
+
+		d1_contents = set(os.listdir('../out'))
+		d2_contents = set(os.listdir('../ref'))
+		common = list(d1_contents & d2_contents)
+		common_files = [
+		    f
+		    for f in common
+		    if os.path.isfile(os.path.join('../out', f))
+		]
+		print('Common files:', common_files)
+
+		# Compare the directories
+		match, mismatch, errors = filecmp.cmpfiles(
+		    '../out',
+		    '../ref',
+		    common_files,
+		)
+		print('Match       :', match)
+		print('Mismatch    :', mismatch)
+		print('Errors      :', errors)
+
 
 class Hls:
 	def __init__(self,url):
@@ -15,7 +41,7 @@ class Hls:
 	def download(self,file):
 		print("download " + self.url + "/video/" + file)
 		out =  file.rsplit('/', 1)[1]
-		out = "../out/" + out
+		out = "../ref/" + out
 		print("out path " + out)
 		res = requests.get(self.url + "/video/" + file, allow_redirects=True)
 		open(out, 'wb').write(res.content)
@@ -118,6 +144,8 @@ class TrafficMonitor:
 #hls = Hls("https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8")
 hls = Hls("https://bitdash-a.akamaihd.net/content/sintel/hls/")
 hls.get_playlist_segs("/video/250kbit.m3u8",5)
+cm = DirCmp()
+cm.cmp()
 exit()
 
 #if (1):
