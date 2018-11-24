@@ -67,29 +67,32 @@ class TrafficMonitor:
 	def is_cache_avail(self,name):
 		data = requests.get(url = self.url_states).json()
 		print(data["caches"])
-		return 1 == sum([ 1 if value["isAvailable"] == "True" else 0 for key , value in data["caches"].items() if key == name])
+		for key , value in data["caches"].items():
+			print(value["isAvailable"] == True)
+		#return 1 == sum([ 1 if value["isAvailable"] == "True" else 0 for key , value in data["caches"].items() if key == name])
+		res = [ 1 if value["isAvailable"] == True else 0 for key , value in data["caches"].items() if key == name]
+		print (sum(res))
+		print (res)
+		return sum(res) == 1
 
 	def wait_cache_avail(self,name):
 		count = 0
-		while count < 10:
-			cond = self.is_cache_avail(name)
+		while count < 10 and self.is_cache_avail(name) == False:
+			#print(self.is_cache_avail(name))
 			count += 1
 			time.sleep(5)
-			if (cond):
-				return True
-				break
-		return False
+		return self.is_cache_avail(name)
 
 	def __init__(self, name):
 		self.name = name
 #if (1):
 tm = TrafficMonitor("TrafficMonitor")
-if (tm.are_all_caches_avail()):
-	print("all caches are available")
-if (tm.is_cache_avail("k8s-node-02")):
-	print("k8s-node-02 available")
-else:	
-	print("k8s-node-03 is not available")
+#if (tm.are_all_caches_avail()):
+#	print("all caches are available")
+#if (tm.is_cache_avail("k8s-node-02")):
+#	print("k8s-node-02 available")
+#else:	
+#	print("k8s-node-03 is not available")
 
 to = TrafficOps()
 if (to.login()):
@@ -98,6 +101,7 @@ else:
 	printt("error login in")
 
 to.set_admin_status("k8s-node-02","REPORTED")
+#to.set_admin_status("k8s-node-02","ADMIN_DOWN")
 #time.sleep(20)
 tm.wait_cache_avail("k8s-node-02")
 
