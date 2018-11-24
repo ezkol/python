@@ -18,7 +18,7 @@ class TrafficVault:
     			'https://traffic-vault/ping'	
 		])
 		print(res)
-		return res == "OK"
+		return res == 0
 class TrafficOps:
 	session = requests.Session()
 	session.verify = False
@@ -74,7 +74,6 @@ class TrafficMonitor:
 
 	def are_all_caches_avail(self):
 		data = requests.get(url = self.url_states).json()
-		print(datetime.datetime.now().time())
 		print(data["caches"])
 		#[ expression for item in list if conditional ]
 		return len(data["caches"].items()) == sum([ 0 if value["isAvailable"] == "True" else 1 for key , value in data["caches"].items()])
@@ -89,6 +88,7 @@ class TrafficMonitor:
 		sec = 0
 		while sec < 100 and not self.is_cache_avail(name) == avail: 
 			sec += 5
+			print(datetime.datetime.now())
 			time.sleep(5)
 		return self.is_cache_avail(name)
 
