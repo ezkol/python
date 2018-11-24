@@ -2,6 +2,7 @@ import requests
 import json
 from subprocess import call
 import os
+import time
 
 class TrafficOps:
 	session = requests.Session()
@@ -32,10 +33,10 @@ class TrafficOps:
 
 		return self.session.post(url = self.url_login , data = json.dumps(self.data) , headers = self.headers).status_code == 200
 
-	def admin_down(self, name):
+	def set_admin_status(self, name,status):
 		server = list(filter(lambda x: x["hostName"] == name , self.session.get(url = self.url_servers).json()["response"]))[0]
 		print(server["id"])
-		data = "id=" + str(server["id"]) + "&status=REPORTED"
+		data = "id=" + str(server["id"]) + "&status=" + status
 		call([
     			'curl',
 			'-H',
@@ -50,12 +51,7 @@ class TrafficOps:
     			self.url_status
 		])
 
-		res = self.session.get(url = self.url_crconfig)
-		print(res)
-#curl -c /tmp/cookies.txt -v -s -k -X POST --data '{ "u":"'"$TRAFFIC_OPS_USER"'", "p":"'"$TRAFFIC_OPS_PASS"'" }' $TRAFFIC_OPS_URI/api/1.2/user/login
-#curl -b /tmp/cookies.txt -v -k -H "Content-Type: application/x-www-form-urlencoded" -X POST $ADDITONAL_DATA --data-urlencode "id=$TMP_SERVER_ID" --data-urlencode "status=$STATUS" $TRAFFIC_OPS_URI/server/updatestatus
-#write CR Config
-# curl -b /tmp/cookies.txt -k --header "X-XSRF-TOKEN: $TMP_TO_COOKIE" $TRAFFIC_OPS_URI/tools/write_crconfig/$CDN_NAME
+		return self.session.get(url = self.url_crconfig).status_code == 200
 
 class TrafficMonitor:
 
@@ -64,35 +60,44 @@ class TrafficMonitor:
 	def are_all_caches_avail(self):
 		data = requests.get(url = self.url_states).json()
 		print(data["caches"])
-		#num_caches = len(data["caches"].items())
-		#for key , value  in data["caches"].items():
-		#	print(key, value["isAvailable"])
 		#[ expression for item in list if conditional ]
 		return len(data["caches"].items()) == sum([ 0 if value["isAvailable"] == "True" else 1 for key , value in data["caches"].items()])
 		#print(list)
 
-	def is_cache_avail(self,cache):
+	def is_cache_avail(self,name):
 		data = requests.get(url = self.url_states).json()
 		print(data["caches"])
-		return 1 == len([ 0 if value["isAvailable"] == "True" else 1 for key , value in data["caches"].items() if key == cache])
+		return 1 == sum([ 1 if value["isAvailable"] == "True" else 0 for key , value in data["caches"].items() if key == name])
 
-	def description(self):
-		desc_str = "name %s url_state %s" % (self.name, self.url_states)
-		return desc_str
-		
+	def wait_cache_avail(self,name):
+		count = 0
+		while count < 10:
+			cond = self.is_cache_avail(name)
+			count += 1
+			time.sleep(5)
+			if (cond):
+				return True
+				break
+		return False
+
 	def __init__(self, name):
 		self.name = name
-if (1):
-	tm = TrafficMonitor("TrafficMonitor")
-	if (tm.are_all_caches_avail()):
-		print("all caches are available")
-	if (tm.is_cache_avail("k8s-node-02")):
-		print("k8s-node-02 available")
-	else:	
-		print("k8s-node-03 is not available")
+#if (1):
+tm = TrafficMonitor("TrafficMonitor")
+if (tm.are_all_caches_avail()):
+	print("all caches are available")
+if (tm.is_cache_avail("k8s-node-02")):
+	print("k8s-node-02 available")
+else:	
+	print("k8s-node-03 is not available")
 
 to = TrafficOps()
 if (to.login()):
 	print("login ok")
-to.admin_down("k8s-node-02")
+else:
+	printt("error login in")
+
+to.set_admin_status("k8s-node-02","REPORTED")
+#time.sleep(20)
+tm.wait_cache_avail("k8s-node-02")
 
