@@ -19,9 +19,13 @@ class Hls:
 		#return res.status_code == 200
 		m3u8_obj = m3u8.loads(res.text)
 		#m3u8_obj.dumps().splitlines()
-		for key in m3u8_obj.segments:
-			if key:  # First one could be None
-      				print(key.uri)
+		count = 0
+		uri_list = [key.uri for key in m3u8_obj.segments]
+		[print(x) for x in uri_list[:5]]
+		#print (uris[:5])
+		#for key in m3u8_obj.segments:
+		#	if key:  # First one could be None
+      				#print(key.uri)
 
 		return res.status_code == 200
 
