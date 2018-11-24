@@ -69,9 +69,9 @@ class TrafficMonitor:
 		print(data["caches"])
 		return 1 == sum([ 1 if value["isAvailable"] == True else 0 for key , value in data["caches"].items() if key == name])
 
-	def wait_cache_avail(self,name):
+	def wait_cache_avail(self,name,avail):
 		sec = 0
-		while sec < 100 and not self.is_cache_avail(name): 
+		while sec < 100 and not self.is_cache_avail(name) == avail: 
 			sec += 5
 			time.sleep(5)
 		return self.is_cache_avail(name)
@@ -93,8 +93,7 @@ if (to.login()):
 else:
 	printt("error login in")
 
+to.set_admin_status("k8s-node-02","ADMIN_DOWN")
+tm.wait_cache_avail("k8s-node-02",False)
 to.set_admin_status("k8s-node-02","REPORTED")
-#to.set_admin_status("k8s-node-02","ADMIN_DOWN")
-#time.sleep(20)
-tm.wait_cache_avail("k8s-node-02")
-
+tm.wait_cache_avail("k8s-node-02",True)
