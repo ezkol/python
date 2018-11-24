@@ -5,6 +5,26 @@ import os
 import time
 import datetime
 
+# git clone https://github.com/globocom/m3u8.git
+# python3.6 setup.py install
+import m3u8
+
+class Hls:
+	def __init__(self,url):
+		self.url = url  + "/video/250kbit.m3u8"
+
+	def get_master_playlist(self):
+		res =  requests.get(url = self.url)
+		#print(res.text)
+		#return res.status_code == 200
+		m3u8_obj = m3u8.loads(res.text)
+		#m3u8_obj.dumps().splitlines()
+		for key in m3u8_obj.segments:
+			if key:  # First one could be None
+      				print(key.uri)
+
+		return res.status_code == 200
+
 class TrafficVault:
 	def login(self):
 		pswd = str(os.environ['OPS_PASS'])
@@ -92,10 +112,13 @@ class TrafficMonitor:
 			time.sleep(5)
 		return self.is_cache_avail(name)
 
-	def __init__(self, name):
-		self.name = name
+#hls = Hls("https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8")
+hls = Hls("https://bitdash-a.akamaihd.net/content/sintel/hls/")
+hls.get_master_playlist()
+exit()
+
 #if (1):
-tm = TrafficMonitor("TrafficMonitor")
+tm = TrafficMonitor()
 #if (tm.are_all_caches_avail()):
 #	print("all caches are available")
 #if (tm.is_cache_avail("k8s-node-02")):
