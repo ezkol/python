@@ -67,19 +67,12 @@ class TrafficMonitor:
 	def is_cache_avail(self,name):
 		data = requests.get(url = self.url_states).json()
 		print(data["caches"])
-		for key , value in data["caches"].items():
-			print(value["isAvailable"] == True)
-		#return 1 == sum([ 1 if value["isAvailable"] == "True" else 0 for key , value in data["caches"].items() if key == name])
-		res = [ 1 if value["isAvailable"] == True else 0 for key , value in data["caches"].items() if key == name]
-		print (sum(res))
-		print (res)
-		return sum(res) == 1
+		return 1 == sum([ 1 if value["isAvailable"] == True else 0 for key , value in data["caches"].items() if key == name])
 
 	def wait_cache_avail(self,name):
-		count = 0
-		while count < 10 and self.is_cache_avail(name) == False:
-			#print(self.is_cache_avail(name))
-			count += 1
+		sec = 0
+		while sec < 100 and not self.is_cache_avail(name): 
+			sec += 5
 			time.sleep(5)
 		return self.is_cache_avail(name)
 
