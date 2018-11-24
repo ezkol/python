@@ -33,11 +33,13 @@ class DirCmp:
 		print('Match       :', match)
 		print('Mismatch    :', mismatch)
 		print('Errors      :', errors)
-
+		return mismatch + errors == 0
 
 class Hls:
 	def __init__(self,url):
 		self.url = url; #  + "/video/250kbit.m3u8"
+
+	segs = []
 	def download(self,file):
 		print("download " + self.url + "/video/" + file)
 		out =  file.rsplit('/', 1)[1]
@@ -45,14 +47,18 @@ class Hls:
 		print("out path " + out)
 		res = requests.get(self.url + "/video/" + file, allow_redirects=True)
 		open(out, 'wb').write(res.content)
+		#print(int(res.headers['Access-Control-Max-Age']) == 86400)
+		print('86400' in res.headers['Access-Control-Max-Age'])
+		self.segs.append(res.headers['Access-Control-Max-Age'])
 
 	def get_playlist_segs(self,playlist,num_segs):
+		segs = []
 		res =  requests.get(url = self.url + playlist)
 		m3u8_obj = m3u8.loads(res.text)
 		#m3u8_obj.dumps().splitlines()
 		seg_list = [key.uri for key in m3u8_obj.segments]
 		[self.download(x) for x in seg_list[:num_segs]]
-		return res.status_code == 200
+		return self.segs #res.status_code == 200
 
 class TrafficVault:
 	def login(self):
@@ -143,7 +149,9 @@ class TrafficMonitor:
 
 #hls = Hls("https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8")
 hls = Hls("https://bitdash-a.akamaihd.net/content/sintel/hls/")
-hls.get_playlist_segs("/video/250kbit.m3u8",5)
+segs = hls.get_playlist_segs("/video/250kbit.m3u8",5)
+print(segs)
+exit()
 cm = DirCmp()
 cm.cmp()
 exit()
