@@ -6,6 +6,7 @@ import time
 import datetime
 import filecmp
 import  re
+from requests.auth import HTTPBasicAuth
 
 # git clone https://github.com/globocom/m3u8.git
 # python3.6 setup.py install
@@ -63,21 +64,18 @@ class Hls:
 		return self.segs #res.status_code == 200
 
 class TrafficVault:
+	pswd = str(os.environ['VAULT_PASS'])
+	usr  = str(os.environ['VAULT_USER'])
+	session = requests.Session()
+	session.verify = False
+	session.auth = (usr , pswd)
+
 	def __init__(self,url):
 		self.base = url
 	def login(self):
-		pswd = str(os.environ['VAULT_PASS'])
-		usr  = str(os.environ['VAULT_USER'])
-		res = call([
-    			'curl',
-			'-k',
-			'-s',
-    			'--user',
-    			usr + ':' + pswd,
-    			self.base + '/ping'	
-		])
-		print(res)
-		return res == 0
+		return self.session.get(self.base + '/ping').status_code == 200
+		print(res.status_code)
+		print(res.text)
 class TrafficOps:
 	session = requests.Session()
 	session.verify = False
@@ -246,13 +244,15 @@ class ViaParser:
 	def parse(self,via):
 		name = via.split()[1]
 		sub = via[via.find("[")+1:via.find("]")].split(":")
+		### WARNING one of the blank values is missing - length should be 24 not less ###
 		if (not sum( len(x) for x in sub) >= 23) : return
 		#print("Traffic Server cache lookup for URL : " + self.codes[2][sub[0][3]])
+		#print("Cache-type and cache-lookup cache result values : " + self.codes[9][sub[1][4]])
 		#print("Response information received from origin server : " + self.codes[3][sub[0][5]])
 		#print("Document write-to-cache : " + self.codes[4][sub[0][7]])
 		#print("Error codes : " + self.codes[6][sub[0][11]])
-		print(name + " " + self.codes[2][sub[0][3]] +" " + self.codes[3][sub[0][5]] + " " + self.codes[4][sub[0][7]] + " " + self.codes[6][sub[0][11]])
-if(1):
+		print(name + ":" + self.codes[2][sub[0][3]] + "," + self.codes[9][sub[1][4]] + "," +  self.codes[3][sub[0][5]] + "," + self.codes[4][sub[0][7]] + "," + self.codes[6][sub[0][11]])
+if(0):
 	#hls = Hls("https://bitdash-a.akamaihd.net/content/sintel/hls/")
 	hls = Hls("http://tr." + str(os.environ['SERVICE_NAME']) + "." + str(os.environ['DOMAIN']) + "/assets/sintel/") # master.m3u8
 	vias = hls.get_playlist_segs("/video/250kbit.m3u8",10)
@@ -265,27 +265,22 @@ if(1):
 	cm.cmp()
 
 
-exit()
+#exit()
 
-ats = "c23-atsec-01"
+ts = "c23-atsec-01"
 tm = TrafficMonitor("http://c23-tm-01")
-if (tm.are_all_caches_avail()):
-	print("all caches are available")
-if (tm.is_cache_avail(ats)):
-	print(ats + " available")
-else:	
-	print(ats + " is not available")
-
 tv = TrafficVault("https://c23-tv-01")
-tv.login()
-
 to = TrafficOps("https://c23-to-01")
-if (to.login()):
-	print("login ok")
-else:
-	printt("error login in")
 
-to.set_admin_status(ats , "ADMIN_DOWN")
-tm.wait_cache_avail(ats , False)
-to.set_admin_status(ats , "REPORTED")
-tm.wait_cache_avail(ats , True)
+if not (tv.login()): exit()
+if not (tm.are_all_caches_avail()):  exit() 
+if not (to.login()): exit()
+
+print("check admin down")
+to.set_admin_status(ts , "ADMIN_DOWN")
+if (tm.wait_cache_avail(ts , False)): exit()
+
+print("check reported")
+to.set_admin_status(ts , "REPORTED")
+if  (tm.wait_cache_avail(ts , True)): exit()
+print("TEST FINISHED OK")
