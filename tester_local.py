@@ -11,23 +11,26 @@ import filecmp
 import m3u8
 
 class DirCmp:
+	def __init__(self,src,dst):
+		self.src = src;
+		self.dst = dst;
 	def cmp(self):
 
-		d1_contents = set(os.listdir('../out'))
-		d2_contents = set(os.listdir('../ref'))
+		d1_contents = set(os.listdir(self.src))
+		d2_contents = set(os.listdir(self.dst))
 		#common = list(d1_contents & d2_contents)
 		common = list(d1_contents)
 		common_files = [
 		    f
 		    for f in common
-		    if os.path.isfile(os.path.join('../out', f))
+		    if os.path.isfile(os.path.join(self.src, f))
 		]
 		print('Common files:', common_files)
 
 		# Compare the directories
 		match, mismatch, errors = filecmp.cmpfiles(
-		    '../out',
-		    '../ref',
+		    self.src,
+		    self.dst,
 		    common_files,
 		)
 		print('Match       :', match)
@@ -158,7 +161,7 @@ if(1):
 	hls = Hls("http://tr." + str(os.environ['SERVICE_NAME']) + "." + str(os.environ['DOMAIN']) + "/assets/sintel/") # master.m3u8
 	segs = hls.get_playlist_segs("/video/250kbit.m3u8",5)
 	print(segs)
-	cm = DirCmp()
+	cm = DirCmp('../out' , '../ref')
 	cm.cmp()
 	exit()
 
