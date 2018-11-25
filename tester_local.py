@@ -244,12 +244,14 @@ class ViaParser:
 	codes[12]['F'] = "connection open failed"
 	
 	def parse(self,via):
-		#print(via)
+		name = via.split()[1]
 		sub = via[via.find("[")+1:via.find("]")].split(":")
-		print("Traffic Server cache lookup for URL : " + self.codes[2][sub[0][3]])
-		print("Response information received from origin server : " + self.codes[3][sub[0][5]])
-		print("Document write-to-cache : " + self.codes[4][sub[0][7]])
-		print("Error codes : " + self.codes[6][sub[0][11]])
+		if (not sum( len(x) for x in sub) >= 23) : return
+		#print("Traffic Server cache lookup for URL : " + self.codes[2][sub[0][3]])
+		#print("Response information received from origin server : " + self.codes[3][sub[0][5]])
+		#print("Document write-to-cache : " + self.codes[4][sub[0][7]])
+		#print("Error codes : " + self.codes[6][sub[0][11]])
+		print(name + " " + self.codes[2][sub[0][3]] +" " + self.codes[3][sub[0][5]] + " " + self.codes[4][sub[0][7]] + " " + self.codes[6][sub[0][11]])
 if(1):
 	#hls = Hls("https://bitdash-a.akamaihd.net/content/sintel/hls/")
 	hls = Hls("http://tr." + str(os.environ['SERVICE_NAME']) + "." + str(os.environ['DOMAIN']) + "/assets/sintel/") # master.m3u8
