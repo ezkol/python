@@ -5,6 +5,7 @@ import os
 import time
 import datetime
 import filecmp
+import  re
 
 # git clone https://github.com/globocom/m3u8.git
 # python3.6 setup.py install
@@ -156,16 +157,114 @@ class TrafficMonitor:
 			print(datetime.datetime.now())
 			time.sleep(5)
 		return self.is_cache_avail(name)
+
+
+class ViaParser:
+	codes = {}
+	codes[1] = {}
+	codes[1]['title'] = "client-info Request headers received from client. Value is one of:"
+	codes[1]['I'] = "If Modified Since (IMS)"
+	codes[1]['C'] = "cookie"
+	codes[1]['E'] = "error in request"
+	codes[1]['S'] = "simple request (not conditional)"
+	codes[1]['N'] = "no-cache"
+	codes[2] = {}
+	codes[2]['title'] = "cache-lookup Result of Traffic Server cache lookup for URL. Value is one of:"
+	codes[2]['A'] = "in cache, not acceptable (a cache \"MISS\")"
+	codes[2]['H'] = "in cache, fresh (a cache \"HIT\")"
+	codes[2]['S'] = "in cache, stale (a cache \"MISS\")"
+	codes[2]['R'] = "in cache, fresh Ram hit (a cache \"HIT\")"
+	codes[2]['M'] = "miss (a cache \"MISS\")"
+	codes[2][' '] = "no cache lookup performed"
+	codes[3] = {}
+	codes[3]['title'] = "server-info Response information received from origin server. Value is one of:"
+	codes[3]['E'] = "error in response"
+	codes[3][' '] = "no server connection needed"
+	codes[3]['S'] = "served"
+	codes[3]['N'] = "not-modified"
+	codes[4] = {}
+	codes[4]['title'] = "cache-fill Result of document write to cache. Value is one of:"
+	codes[4]['U'] = "updated old cache copy"
+	codes[4]['D'] = "cached copy deleted"
+	codes[4]['W'] = "written into cache (new copy)"
+	codes[4][' '] = "no cache write performed"
+	codes[5] = {}
+	codes[5]['title'] = "proxy-info Proxy operation result. Value is one of:"
+	codes[5]['R'] = "origin server revalidated"
+	codes[5][' '] = "unknown?"
+	codes[5]['S'] = "served"
+	codes[5]['N'] = "not-modified"
+	codes[6] = {}
+	codes[6]['title'] = "error-codes Value is one of:"
+	codes[6]['A'] = "authorization failure"
+	codes[6]['H'] = "header syntax unacceptable"
+	codes[6]['C'] = "connection to server failed"
+	codes[6]['T'] = "connection timed out"
+	codes[6]['S'] = "server related error"
+	codes[6]['D'] = "dns failure"
+	codes[6]['N'] = "no error"
+	codes[6]['F'] = "request forbidden"
+	codes[7] = {}
+	codes[7]['title'] = "tunnel-info Proxy-only service operation. Value is one of:"
+	codes[7][' '] = "no tunneling"
+	codes[7]['U'] = "tunneling because of url (url suggests dynamic content)"
+	codes[7]['M'] = "tunneling due to a method (e.g. CONNECT)"
+	codes[7]['O'] = "tunneling because cache is turned off"
+	codes[7]['F'] = "tunneling due to a header field (such as presence of If-Range header)"
+	codes[8] = {}
+	codes[8]['title'] = "cache-type and cache-lookup cache result values (2 characters)"
+	codes[8]['I'] = "icp"
+	codes[8][' '] = "cache miss or no cache lookup"
+	codes[8]['C'] = "cache"
+	codes[9] = {}
+	codes[9]['title'] = "cache-lookup-result character value is one of:"
+	codes[9][' '] = "no cache lookup"
+	codes[9]['S'] = "cache hit, but expired"
+	codes[9]['U'] = "cache hit, but client forces revalidate (e.g. Pragma: no-cache)"
+	codes[9]['D'] = "cache hit, but method forces revalidated (e.g. ftp, not anonymous)"
+	codes[9]['I'] = "conditional miss (client sent conditional, fresh in cache, returned 412)"
+	codes[9]['H'] = "cache hit"
+	codes[9]['M'] = "cache miss (url not in cache)"
+	codes[9]['C'] = "cache hit, but config forces revalidate"
+	codes[9]['N'] = "conditional hit (client sent conditional, doc fresh in cache, returned 304)"
+	codes[10] = {}
+	codes[10]['title'] = "icp-conn-info ICP status"
+	codes[10][' '] = "no icp"
+	codes[10]['S'] = "connection opened successfully"
+	codes[10]['F'] = "connection open failed"
+	codes[11] = {}
+	codes[11]['title'] = "parent-proxy parent proxy connection status"
+	codes[11][' '] = "no parent proxy"
+	codes[11]['S'] = "connection opened successfully"
+	codes[11]['F'] = "connection open failed"
+	codes[12] = {}
+	codes[12]['title'] = "server-conn-info origin server connection status"
+	codes[12][' '] = "no server connection"
+	codes[12]['S'] = "connection opened successfully"
+	codes[12]['F'] = "connection open failed"
+	
+	def parse(self,via):
+		#print(via)
+		sub = via[via.find("[")+1:via.find("]")].split(":")
+		print("Traffic Server cache lookup for URL : " + self.codes[2][sub[0][3]])
+		print("Response information received from origin server : " + self.codes[3][sub[0][5]])
+		print("Document write-to-cache : " + self.codes[4][sub[0][7]])
+		print("Error codes : " + self.codes[6][sub[0][11]])
 if(1):
 	#hls = Hls("https://bitdash-a.akamaihd.net/content/sintel/hls/")
 	hls = Hls("http://tr." + str(os.environ['SERVICE_NAME']) + "." + str(os.environ['DOMAIN']) + "/assets/sintel/") # master.m3u8
-	segs = hls.get_playlist_segs("/video/250kbit.m3u8",5)
-	print(segs)
+	vias = hls.get_playlist_segs("/video/250kbit.m3u8",10)
+	print(vias)
+	vp = ViaParser()
+	res = [vp.parse(x) for x in vias]
+		
+	exit()
 	cm = DirCmp('../out' , '../ref')
 	cm.cmp()
-	exit()
+
 
 exit()
+
 ats = "c23-atsec-01"
 tm = TrafficMonitor("http://c23-tm-01")
 if (tm.are_all_caches_avail()):
