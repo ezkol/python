@@ -8,7 +8,7 @@ import filecmp
 
 # git clone https://github.com/globocom/m3u8.git
 # python3.6 setup.py install
-import m3u8
+#import m3u8
 # Determine the items that exist in both directories
 
 class DirCmp:
@@ -61,16 +61,18 @@ class Hls:
 		return self.segs #res.status_code == 200
 
 class TrafficVault:
+	def __init__(self,url):
+		self.base = url
 	def login(self):
-		pswd = str(os.environ['OPS_PASS'])
-		usr  = str(os.environ['RIAK'])
+		pswd = str(os.environ['VAULT_PASS'])
+		usr  = str(os.environ['VAULT_USER'])
 		res = call([
     			'curl',
 			'-k',
 			'-s',
     			'--user',
     			usr + ':' + pswd,
-    			'https://traffic-vault/ping'	
+    			self.base + '/ping'	
 		])
 		print(res)
 		return res == 0
@@ -78,14 +80,19 @@ class TrafficOps:
 	session = requests.Session()
 	session.verify = False
 
-	url_login = "https://10.0.40.150/api/1.2/user/login"
-	url_servers = "https://10.0.40.150/api/1.2/servers.json"
-	url_status = "https://10.0.40.150/server/updatestatus"
-	url_crconfig = "https://10.0.40.150/tools/write_crconfig/cdn"
 	pswd = str(os.environ['OPS_PASS'])
-	usr = str(os.environ['OPS_USER'])
+	usr  = str(os.environ['OPS_USER'])
+
 	data = {"u" : usr , "p" : pswd}
 	headers = {"Content-Type" : "application/x-www-form-urlencode" }
+
+	def __init__(self,url):
+		self.base = url
+		self.url_login   = self.base + "/api/1.2/user/login"
+		self.url_servers = self.base + "/api/1.2/servers.json"
+		self.url_status =  self.base + "/server/updatestatus"
+		self.url_crconfig= self.base + "/tools/write_crconfig/cdn"
+	
 	def login(self):
 		call([
     			'curl',
@@ -125,7 +132,9 @@ class TrafficOps:
 
 class TrafficMonitor:
 
-	url_states = "http://localhost/publish/CrStates"
+	def __init__(self,url):
+		self.base = url
+		self.url_states = self.base + "/publish/CrStates"
 
 	def are_all_caches_avail(self):
 		data = requests.get(url = self.url_states).json()
@@ -146,35 +155,35 @@ class TrafficMonitor:
 			print(datetime.datetime.now())
 			time.sleep(5)
 		return self.is_cache_avail(name)
-
-#hls = Hls("https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8")
-hls = Hls("https://bitdash-a.akamaihd.net/content/sintel/hls/")
-segs = hls.get_playlist_segs("/video/250kbit.m3u8",5)
-print(segs)
-exit()
-cm = DirCmp()
-cm.cmp()
-exit()
+if(0):
+	hls = Hls("https://bitdash-a.akamaihd.net/content/sintel/hls/")
+	segs = hls.get_playlist_segs("/video/250kbit.m3u8",5)
+	print(segs)
+	exit()
+	cm = DirCmp()
+	cm.cmp()
+	exit()
 
 #if (1):
-tm = TrafficMonitor()
-#if (tm.are_all_caches_avail()):
-#	print("all caches are available")
-#if (tm.is_cache_avail("k8s-node-02")):
-#	print("k8s-node-02 available")
-#else:	
-#	print("k8s-node-03 is not available")
+ats = "c23-atsec-01"
+tm = TrafficMonitor("http://c23-tm-01")
+if (tm.are_all_caches_avail()):
+	print("all caches are available")
+if (tm.is_cache_avail(ats)):
+	print(ats + " available")
+else:	
+	print(ats + " is not available")
 
-tv = TrafficVault()
+tv = TrafficVault("https://c23-tv-01")
 tv.login()
 
-to = TrafficOps()
+to = TrafficOps("https://c23-to-01")
 if (to.login()):
 	print("login ok")
 else:
 	printt("error login in")
 
-to.set_admin_status("k8s-node-02","ADMIN_DOWN")
-tm.wait_cache_avail("k8s-node-02",False)
-to.set_admin_status("k8s-node-02","REPORTED")
-tm.wait_cache_avail("k8s-node-02",True)
+to.set_admin_status(ats , "ADMIN_DOWN")
+tm.wait_cache_avail(ats , False)
+to.set_admin_status(ats , "REPORTED")
+tm.wait_cache_avail(ats , True)
