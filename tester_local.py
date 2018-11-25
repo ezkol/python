@@ -154,7 +154,7 @@ class TrafficMonitor:
 			sec += 5
 			print(datetime.datetime.now())
 			time.sleep(5)
-		return self.is_cache_avail(name)
+		return self.is_cache_avail(name) == avail
 
 
 class ViaParser:
@@ -278,9 +278,10 @@ if not (to.login()): exit()
 
 print("check admin down")
 to.set_admin_status(ts , "ADMIN_DOWN")
-if (tm.wait_cache_avail(ts , False)): exit()
+if not (tm.wait_cache_avail(ts , False)): exit()
 
 print("check reported")
 to.set_admin_status(ts , "REPORTED")
-if  (tm.wait_cache_avail(ts , True)): exit()
+if not (tm.wait_cache_avail(ts , True)): exit()
 print("TEST FINISHED OK")
+time.sleep(1)
