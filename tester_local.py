@@ -8,15 +8,15 @@ import filecmp
 
 # git clone https://github.com/globocom/m3u8.git
 # python3.6 setup.py install
-#import m3u8
-# Determine the items that exist in both directories
+import m3u8
 
 class DirCmp:
 	def cmp(self):
 
 		d1_contents = set(os.listdir('../out'))
 		d2_contents = set(os.listdir('../ref'))
-		common = list(d1_contents & d2_contents)
+		#common = list(d1_contents & d2_contents)
+		common = list(d1_contents)
 		common_files = [
 		    f
 		    for f in common
@@ -43,13 +43,11 @@ class Hls:
 	def download(self,file):
 		print("download " + self.url + "/video/" + file)
 		out =  file.rsplit('/', 1)[1]
-		out = "../ref/" + out
+		out = "../out/" + out
 		print("out path " + out)
 		res = requests.get(self.url + "/video/" + file, allow_redirects=True)
 		open(out, 'wb').write(res.content)
-		#print(int(res.headers['Access-Control-Max-Age']) == 86400)
-		print('86400' in res.headers['Access-Control-Max-Age'])
-		self.segs.append(res.headers['Access-Control-Max-Age'])
+		self.segs.append(res.headers['Via'])
 
 	def get_playlist_segs(self,playlist,num_segs):
 		segs = []
@@ -155,16 +153,16 @@ class TrafficMonitor:
 			print(datetime.datetime.now())
 			time.sleep(5)
 		return self.is_cache_avail(name)
-if(0):
-	hls = Hls("https://bitdash-a.akamaihd.net/content/sintel/hls/")
+if(1):
+	#hls = Hls("https://bitdash-a.akamaihd.net/content/sintel/hls/")
+	hls = Hls("http://tr." + str(os.environ['SERVICE_NAME']) + "." + str(os.environ['DOMAIN']) + "/assets/sintel/") # master.m3u8
 	segs = hls.get_playlist_segs("/video/250kbit.m3u8",5)
 	print(segs)
-	exit()
 	cm = DirCmp()
 	cm.cmp()
 	exit()
 
-#if (1):
+exit()
 ats = "c23-atsec-01"
 tm = TrafficMonitor("http://c23-tm-01")
 if (tm.are_all_caches_avail()):
